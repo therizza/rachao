@@ -51,8 +51,9 @@ type PositionRepositoryInterface interface {
 }
 
 type AttributeRepositoryInterface interface {
-	// GetByIDPosition(idPosition uuid.UUID) (domain.Attributes, error)
-	// GetAll() ([]domain.Attributes, error)
+	GetByIDPosition(idPosition int) (domain.Attributes, error)
+	GetByIDAttributes(id int) (domain.Attributes, error)
+	GetAll() ([]domain.Attributes, error)
 	Create(attributes domain.AttributesRequest) (int, error)
 	// Update(attributes domain.AttributesRequest, id uuid.UUID) error
 	// Delete(id uuid.UUID) error

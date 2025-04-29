@@ -11,10 +11,24 @@ type AttributesRepository struct {
 	DB *sql.DB
 }
 
-const GetByIDPositionQuery = `SELECT * FROM position WHERE id_position = $1;`
+const GetByIDPositionQuery = `SELECT * FROM attributes WHERE id_position = $1;`
 
-func (repo *AttributesRepository) GetByIDPosition(idPosition uuid.UUID) (domain.Attributes, error) {
+func (repo *AttributesRepository) GetByIDPosition(idPosition int) (domain.Attributes, error) {
 	row := repo.DB.QueryRow(GetByIDPositionQuery, idPosition)
+	var attributes domain.Attributes
+	if err := row.Scan(&attributes.ID, &attributes.IDPosition, &attributes.PAC, &attributes.SHO, &attributes.PAS, &attributes.DRI, &attributes.DEF, &attributes.PHY); err != nil {
+		if err == sql.ErrNoRows {
+			return attributes, nil
+		}
+		return attributes, err
+	}
+	return attributes, nil
+}
+
+const GetByIDAttributesQuery = `SELECT * FROM attributes WHERE id = $1;`
+
+func (repo *AttributesRepository) GetByIDAttributes(id int) (domain.Attributes, error) {
+	row := repo.DB.QueryRow(GetByIDAttributesQuery, id)
 	var attributes domain.Attributes
 	if err := row.Scan(&attributes.ID, &attributes.IDPosition, &attributes.PAC, &attributes.SHO, &attributes.PAS, &attributes.DRI, &attributes.DEF, &attributes.PHY); err != nil {
 		if err == sql.ErrNoRows {

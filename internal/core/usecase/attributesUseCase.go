@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"rachao/infra/repositories"
 	"rachao/internal/core/domain"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -12,13 +13,15 @@ import (
 
 type AttributesUseCase struct {
 	AttributesRepository repositories.AttributeRepositoryInterface
+	PositionRepository   repositories.PositionRepositoryInterface
 	db                   *sql.DB
 	logger               *zap.Logger
 }
 
-func NewAttributesUseCase(attributesRepository repositories.AttributeRepositoryInterface, db *sql.DB, logger *zap.Logger) *AttributesUseCase {
+func NewAttributesUseCase(attributesRepository repositories.AttributeRepositoryInterface, positionRepository repositories.PositionRepositoryInterface, db *sql.DB, logger *zap.Logger) *AttributesUseCase {
 	return &AttributesUseCase{
 		AttributesRepository: attributesRepository,
+		PositionRepository:   positionRepository,
 		db:                   db,
 		logger:               logger,
 	}
@@ -29,6 +32,13 @@ func (uc AttributesUseCase) Create(ctx context.Context, c *gin.Context) {
 	if err := c.ShouldBindJSON(&attributes); err != nil {
 		uc.logger.Error("Error binding JSON", zap.Error(err))
 		c.JSON(400, gin.H{"error": "Invalid request data"})
+		return
+	}
+
+	err := uc.validateAttributesExists(ctx, attributes.IDPosition)
+	if err != nil {
+		uc.logger.Error("Error fetching attributes by ID", zap.Error(err))
+		c.JSON(400, gin.H{"error": "Bad Request"})
 		return
 	}
 	attributesID, err := uc.AttributesRepository.Create(attributes)
@@ -42,14 +52,61 @@ func (uc AttributesUseCase) Create(ctx context.Context, c *gin.Context) {
 
 }
 
-// func (uc AttributesUseCase) fetchAttributesByID(_ context.Context, id uuid.UUID) (domain.Attributes, error) {
-// 	attributes, err := uc.AttributesRepository.GetByIDPosition(id)
-// 	if err != nil {
-// 		uc.logger.Error("Error fetching attributes by ID", zap.Error(err))
-// 		return domain.Attributes{}, err
-// 	}
-// 	if attributes == (domain.Attributes{}) {
-// 		return domain.Attributes{}, nil
-// 	}
-// 	return attributes, nil
-// }
+func (uc AttributesUseCase) GetAll(ctx context.Context, c *gin.Context) {
+	attributes, err := uc.AttributesRepository.GetAll()
+	if err != nil {
+		uc.logger.Error("Error fetching attributes", zap.Error(err))
+		c.JSON(500, gin.H{"error": "Internal Server Error"})
+		return
+	}
+	if attributes == nil {
+		c.JSON(200, gin.H{"message": "No data found"})
+		return
+	}
+	c.JSON(200, gin.H{"data": attributes})
+}
+
+func (uc AttributesUseCase) GetByIDAttributes(ctx context.Context, c *gin.Context) {
+	id := c.Param("id")
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		uc.logger.Error("Invalid ID format", zap.Error(err))
+		c.JSON(400, gin.H{"error": "Invalid ID format"})
+		return
+	}
+	attributes, err := uc.AttributesRepository.GetByIDAttributes(idInt)
+	if err != nil {
+		uc.logger.Error("Error fetching attributes by ID", zap.Error(err))
+		c.JSON(500, gin.H{"error": "Internal Server Error"})
+		return
+	}
+	if attributes == (domain.Attributes{}) {
+		c.JSON(404, gin.H{"message": "Attributes not found"})
+		return
+	}
+	c.JSON(200, gin.H{"data": attributes})
+}
+
+func (uc AttributesUseCase) validateAttributesExists(_ context.Context, id int) error {
+	var attributes domain.Attributes
+
+	possition, err := uc.PositionRepository.GetByID(id)
+	if err != nil {
+		uc.logger.Error("Error fetching position by ID", zap.Error(err))
+		return err
+	}
+	if possition == (domain.Position{}) {
+		return sql.ErrNoRows
+	}
+
+	attributes, err = uc.AttributesRepository.GetByIDPosition(id)
+	if err != nil {
+		uc.logger.Error("Error fetching attributes by ID", zap.Error(err))
+		return err
+	}
+	if attributes != (domain.Attributes{}) {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}

@@ -1,16 +1,14 @@
 package domain
 
-import "github.com/google/uuid"
-
 type Attributes struct {
-	ID         uuid.UUID `json:"id"`
-	IDPosition int       `json:"id_position"`
-	PAC        int       `json:"pac"`
-	SHO        int       `json:"sho"`
-	PAS        int       `json:"pas"`
-	DRI        int       `json:"dri"`
-	DEF        int       `json:"def"`
-	PHY        int       `json:"phy"`
+	ID         int `json:"id"`
+	IDPosition int `json:"id_position"`
+	PAC        int `json:"pac"`
+	SHO        int `json:"sho"`
+	PAS        int `json:"pas"`
+	DRI        int `json:"dri"`
+	DEF        int `json:"def"`
+	PHY        int `json:"phy"`
 }
 
 type AttributesRequest struct {

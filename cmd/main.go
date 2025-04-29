@@ -53,7 +53,7 @@ func main() {
 	nationUseCase := usecase.NewNationUseCase(&repoNation, conn, logger)
 	photoUseCase := usecase.NewPhotoUseCase(&repoPhoto, conn, logger)
 	positionUseCase := usecase.NewPositionUseCase(&repoPosition, conn, logger)
-	attributesUseCase := usecase.NewAttributesUseCase(&repoAttribute, conn, logger)
+	attributesUseCase := usecase.NewAttributesUseCase(&repoAttribute, &repoPosition, conn, logger)
 
 	GinAdapater := adapters.NewGinAdapter(
 		healthzUseCase,
