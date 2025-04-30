@@ -55,6 +55,6 @@ type AttributeRepositoryInterface interface {
 	GetByIDAttributes(id int) (domain.Attributes, error)
 	GetAll() ([]domain.Attributes, error)
 	Create(attributes domain.AttributesRequest) (int, error)
-	// Update(attributes domain.AttributesRequest, id uuid.UUID) error
-	// Delete(id uuid.UUID) error
+	Update(attributes domain.AttributesRequest, id int) error
+	Delete(id int) error
 }

@@ -3,8 +3,6 @@ package repositories
 import (
 	"database/sql"
 	"rachao/internal/core/domain"
-
-	"github.com/google/uuid"
 )
 
 type AttributesRepository struct {
@@ -76,7 +74,7 @@ func (repo *AttributesRepository) GetAll() ([]domain.Attributes, error) {
 
 const UpdateAttributesQuery = `UPDATE attributes SET id_position = $1, pac = $2, sho = $3, pas = $4, dri = $5, def = $6, phy = $7 WHERE id = $8;`
 
-func (repo *AttributesRepository) Update(attributes domain.AttributesRequest, id uuid.UUID) error {
+func (repo *AttributesRepository) Update(attributes domain.AttributesRequest, id int) error {
 	_, err := repo.DB.Exec(UpdateAttributesQuery, attributes.IDPosition, attributes.PAC, attributes.SHO, attributes.PAS, attributes.DRI, attributes.DEF, attributes.PHY, id)
 	if err != nil {
 		return err
@@ -86,7 +84,7 @@ func (repo *AttributesRepository) Update(attributes domain.AttributesRequest, id
 
 const DeleteAttributesQuery = `DELETE FROM attributes WHERE id = $1;`
 
-func (repo *AttributesRepository) Delete(id uuid.UUID) error {
+func (repo *AttributesRepository) Delete(id int) error {
 	_, err := repo.DB.Exec(DeleteAttributesQuery, id)
 	if err != nil {
 		return err

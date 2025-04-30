@@ -35,7 +35,7 @@ func (uc AttributesUseCase) Create(ctx context.Context, c *gin.Context) {
 		return
 	}
 
-	err := uc.validateAttributesExists(ctx, attributes.IDPosition)
+	err := uc.validateExists(ctx, attributes.IDPosition)
 	if err != nil {
 		uc.logger.Error("Error fetching attributes by ID", zap.Error(err))
 		c.JSON(400, gin.H{"error": "Bad Request"})
@@ -66,6 +66,27 @@ func (uc AttributesUseCase) GetAll(ctx context.Context, c *gin.Context) {
 	c.JSON(200, gin.H{"data": attributes})
 }
 
+func (uc AttributesUseCase) GetByIDPosition(ctx context.Context, c *gin.Context) {
+	id := c.Param("id")
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		uc.logger.Error("Invalid ID format", zap.Error(err))
+		c.JSON(400, gin.H{"error": "Invalid ID format"})
+		return
+	}
+	attributes, err := uc.AttributesRepository.GetByIDPosition(idInt)
+	if err != nil {
+		uc.logger.Error("Error fetching attributes by ID", zap.Error(err))
+		c.JSON(500, gin.H{"error": "Internal Server Error"})
+		return
+	}
+	if attributes == (domain.Attributes{}) {
+		c.JSON(404, gin.H{"message": "Attributes not found"})
+		return
+	}
+	c.JSON(200, gin.H{"data": attributes})
+}
+
 func (uc AttributesUseCase) GetByIDAttributes(ctx context.Context, c *gin.Context) {
 	id := c.Param("id")
 	idInt, err := strconv.Atoi(id)
@@ -87,7 +108,76 @@ func (uc AttributesUseCase) GetByIDAttributes(ctx context.Context, c *gin.Contex
 	c.JSON(200, gin.H{"data": attributes})
 }
 
+func (uc AttributesUseCase) Update(ctx context.Context, c *gin.Context) {
+	id := c.Param("id")
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		uc.logger.Error("Invalid ID format", zap.Error(err))
+		c.JSON(400, gin.H{"error": "Invalid ID format"})
+		return
+	}
+	attributes := domain.AttributesRequest{}
+	if err := c.ShouldBindJSON(&attributes); err != nil {
+		uc.logger.Error("Error binding JSON", zap.Error(err))
+		c.JSON(400, gin.H{"error": "Invalid request data"})
+		return
+	}
+
+	err = uc.validateAttributesExists(ctx, idInt)
+	if err != nil {
+		uc.logger.Error("Error fetching attributes by ID", zap.Error(err))
+		c.JSON(400, gin.H{"error": "Bad Request"})
+		return
+	}
+
+	err = uc.AttributesRepository.Update(attributes, idInt)
+	if err != nil {
+		uc.logger.Error("Error updating attributes", zap.Error(err))
+		c.JSON(500, gin.H{"error": "Internal Server Error"})
+		return
+	}
+	c.JSON(200, gin.H{"message": "Attributes updated successfully"})
+}
+
+func (uc AttributesUseCase) Delete(ctx context.Context, c *gin.Context) {
+	id := c.Param("id")
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		uc.logger.Error("Invalid ID format", zap.Error(err))
+		c.JSON(400, gin.H{"error": "Invalid ID format"})
+		return
+	}
+	err = uc.validateAttributesExists(ctx, idInt)
+	if err != nil {
+		uc.logger.Error("Error fetching attributes by ID", zap.Error(err))
+		c.JSON(400, gin.H{"error": "Bad Request"})
+		return
+	}
+	err = uc.AttributesRepository.Delete(idInt)
+	if err != nil {
+		uc.logger.Error("Error deleting attributes", zap.Error(err))
+		c.JSON(500, gin.H{"error": "Internal Server Error"})
+		return
+	}
+	c.JSON(200, gin.H{"message": "Attributes deleted successfully"})
+}
+
 func (uc AttributesUseCase) validateAttributesExists(_ context.Context, id int) error {
+	var attributes domain.Attributes
+
+	attributes, err := uc.AttributesRepository.GetByIDAttributes(id)
+	if err != nil {
+		uc.logger.Error("Error fetching attributes by ID", zap.Error(err))
+		return err
+	}
+	if attributes == (domain.Attributes{}) {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}
+
+func (uc AttributesUseCase) validateExists(_ context.Context, id int) error {
 	var attributes domain.Attributes
 
 	possition, err := uc.PositionRepository.GetByID(id)

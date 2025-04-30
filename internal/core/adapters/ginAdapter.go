@@ -137,6 +137,15 @@ func (ga *GinAdapter) SetupRouter() *gin.Engine {
 	r.GET("/attributes/:id", func(c *gin.Context) {
 		ga.Attributes.GetByIDAttributes(c.Request.Context(), c)
 	})
+	r.GET("/attributes/position/:id", func(c *gin.Context) {
+		ga.Attributes.GetByIDPosition(c.Request.Context(), c)
+	})
+	r.PUT("/attributes/:id", func(c *gin.Context) {
+		ga.Attributes.Update(c.Request.Context(), c)
+	})
+	r.DELETE("/attributes/:id", func(c *gin.Context) {
+		ga.Attributes.Delete(c.Request.Context(), c)
+	})
 
 	return r
 }
