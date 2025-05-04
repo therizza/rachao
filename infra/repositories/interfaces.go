@@ -17,9 +17,10 @@ type PlayRepositoryInterface interface {
 }
 
 type CardRepositoryInterface interface {
+	GetByIDPlay(id uuid.UUID) (domain.Card, error)
 	GetByID(id uuid.UUID) (domain.Card, error)
 	Create(id uuid.UUID, card domain.CardRequest) (uuid.UUID, error)
-	Update(id uuid.UUID, card domain.CardRequest) error
+	Update(id uuid.UUID, card domain.CardRequest) (idCard uuid.UUID, erro error)
 }
 
 type CardPlayRepositoryInterface interface {
@@ -57,4 +58,12 @@ type AttributeRepositoryInterface interface {
 	Create(attributes domain.AttributesRequest) (int, error)
 	Update(attributes domain.AttributesRequest, id int) error
 	Delete(id int) error
+}
+
+type OverallRepositoryInterface interface {
+	Exists(idPlay uuid.UUID) (bool, error)
+	GetByIDPlay(idUser uuid.UUID) (domain.Overall, error)
+	Create(overall domain.OverallRequest) (uuid.UUID, error)
+	Update(overall domain.OverallRequest, idUser uuid.UUID) error
+	Delete(idUser uuid.UUID) error
 }

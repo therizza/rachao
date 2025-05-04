@@ -1,59 +1,50 @@
 package main
 
 import (
-	"database/sql"
+	"rachao/config"
+	"rachao/infra/messaging"
 	"rachao/infra/repositories"
 	"rachao/internal/core/adapters"
-	"rachao/internal/core/constantes"
 	"rachao/internal/core/usecase"
 
-	"os"
-
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 )
 
 func main() {
-	envPath := "../.env"
-	err := godotenv.Load(envPath)
-	if err != nil {
-		panic("Error loading .env file. Ensure the file exists and the path is correct.")
-	}
+	cfg := config.Load()
 
-	port := os.Getenv(constantes.Port)
-	dbSource := os.Getenv(constantes.DbSource)
-	if dbSource == "" {
-		panic("DbSource environment variable is not set. Check your .env file.")
-	}
-
-	conn, err := sql.Open("postgres", dbSource)
-	if err != nil {
-		panic("Error connecting to the database: " + err.Error())
-	}
-	defer conn.Close()
-	err = conn.Ping()
-	if err != nil {
-		panic("Database connection test failed: " + err.Error())
-	}
-
-	repoPlay := repositories.PlayRepository{DB: conn}
-	repoCard := repositories.CardRepository{DB: conn}
-	repoCardPlay := repositories.CardPlayRepository{DB: conn}
-	repoNation := repositories.NationRepository{DB: conn}
-	repoPhoto := repositories.PhotoRepository{DB: conn}
-	repoPosition := repositories.PositionRepository{DB: conn}
-	repoAttribute := repositories.AttributesRepository{DB: conn}
 	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+
+	db := config.InitDatabase(cfg.DbSource)
+	defer db.Close()
+
+	rabbitMQChannel := config.InitRabbitMQ(cfg.Messaging, cfg.MessagingChannel)
+	defer rabbitMQChannel.Close()
+
+	repoPlay := repositories.PlayRepository{DB: db}
+	repoCard := repositories.CardRepository{DB: db}
+	repoCardPlay := repositories.CardPlayRepository{DB: db}
+	repoNation := repositories.NationRepository{DB: db}
+	repoPhoto := repositories.PhotoRepository{DB: db}
+	repoPosition := repositories.PositionRepository{DB: db}
+	repoAttribute := repositories.AttributesRepository{DB: db}
+	repoOverall := repositories.OverallRepository{DB: db}
+	rabbitmq := messaging.RabbitMQ{Channel: rabbitMQChannel, Exchange: cfg.MessagingChannel}
 
 	healthzUseCase := &usecase.HealthzUseCase{}
-	playUseCase := usecase.NewPlayUseCase(&repoPlay, conn, logger)
-	cardUseCase := usecase.NewCardUseCase(&repoCard, conn, logger)
-	cardPlayUseCase := usecase.NewCardPlayUseCase(&repoCardPlay, conn, logger)
-	nationUseCase := usecase.NewNationUseCase(&repoNation, conn, logger)
-	photoUseCase := usecase.NewPhotoUseCase(&repoPhoto, conn, logger)
-	positionUseCase := usecase.NewPositionUseCase(&repoPosition, conn, logger)
-	attributesUseCase := usecase.NewAttributesUseCase(&repoAttribute, &repoPosition, conn, logger)
+
+	overallUseCase := usecase.NewOverallUseCase(&rabbitmq, &repoOverall, db, logger)
+	playUseCase := usecase.NewPlayUseCase(&repoPlay, db, logger)
+	cardUseCase := usecase.NewCardUseCase(&repoCard, &repoCardPlay, &repoAttribute, &rabbitmq, db, logger)
+	cardPlayUseCase := usecase.NewCardPlayUseCase(&repoCardPlay, db, logger)
+	nationUseCase := usecase.NewNationUseCase(&repoNation, db, logger)
+	photoUseCase := usecase.NewPhotoUseCase(&repoPhoto, db, logger)
+	positionUseCase := usecase.NewPositionUseCase(&repoPosition, db, logger)
+	attributesUseCase := usecase.NewAttributesUseCase(&repoAttribute, &repoPosition, db, logger)
+
+	go overallUseCase.Start()
 
 	GinAdapater := adapters.NewGinAdapter(
 		healthzUseCase,
@@ -67,7 +58,6 @@ func main() {
 	)
 
 	r := GinAdapater.SetupRouter()
-
-	r.Run(port)
+	r.Run(cfg.Port)
 
 }

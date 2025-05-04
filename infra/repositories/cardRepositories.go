@@ -13,8 +13,19 @@ type CardRepository struct {
 
 const GetByIDQuery = `SELECT * FROM card WHERE id_play = $1;`
 
-func (repo *CardRepository) GetByID(id uuid.UUID) (domain.Card, error) {
+func (repo *CardRepository) GetByIDPlay(id uuid.UUID) (domain.Card, error) {
 	row := repo.DB.QueryRow(GetByIDQuery, id)
+	var card domain.Card
+	if err := row.Scan(&card.ID, &card.IDPlay, &card.PAC, &card.SHO, &card.PAS, &card.DRI, &card.DEF, &card.PHY); err != nil {
+		return domain.Card{}, err
+	}
+	return card, nil
+}
+
+const GetByID = `SELECT * FROM card WHERE id = $1;`
+
+func (repo *CardRepository) GetByID(id uuid.UUID) (domain.Card, error) {
+	row := repo.DB.QueryRow(GetByID, id)
 	var card domain.Card
 	if err := row.Scan(&card.ID, &card.IDPlay, &card.PAC, &card.SHO, &card.PAS, &card.DRI, &card.DEF, &card.PHY); err != nil {
 		return domain.Card{}, err
@@ -45,17 +56,21 @@ func (repo *CardRepository) Create(ID uuid.UUID, card domain.CardRequest) (uuid.
 
 const UpdateQuery = `UPDATE card SET pac = $1, sho = $2, pas = $3, dri = $4, def = $5, phy = $6 WHERE id_play = $7;`
 
-func (repo *CardRepository) Update(id uuid.UUID, card domain.CardRequest) error {
+func (repo *CardRepository) Update(id uuid.UUID, card domain.CardRequest) (idCard uuid.UUID, erro error) {
 	result, err := repo.DB.Exec(UpdateQuery, card.PAC, card.SHO, card.PAS, card.DRI, card.DEF, card.PHY, id)
 	if err != nil {
-		return err
+		return uuid.Nil, err
+	}
+	cardResult, err := repo.GetByIDPlay(id)
+	if err != nil {
+		return uuid.Nil, err
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return err
+		return uuid.Nil, err
 	}
 	if rowsAffected == 0 {
-		return sql.ErrNoRows
+		return uuid.Nil, sql.ErrNoRows
 	}
-	return nil
+	return cardResult.ID, nil
 }
