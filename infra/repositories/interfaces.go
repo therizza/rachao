@@ -67,3 +67,14 @@ type OverallRepositoryInterface interface {
 	Update(overall domain.OverallRequest, idUser uuid.UUID) error
 	Delete(idUser uuid.UUID) error
 }
+
+type ModalityRepositoryInterface interface {
+	GetAll() ([]domain.Modality, error)
+	GetAllByInactive() ([]domain.Modality, error)
+	GetByID(id int) (domain.Modality, error)
+	Create(modality domain.CreateModalityRequest) (int, error)
+	Update(modality domain.Modality) error
+	Inactive(id int) error
+	Active(id int) error
+	GetByName(name string) (domain.Modality, error)
+}

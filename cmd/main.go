@@ -31,6 +31,7 @@ func main() {
 	repoPosition := repositories.PositionRepository{DB: db}
 	repoAttribute := repositories.AttributesRepository{DB: db}
 	repoOverall := repositories.OverallRepository{DB: db}
+	repoModality := repositories.ModalityRepository{DB: db}
 	rabbitmq := messaging.RabbitMQ{Channel: rabbitMQChannel, Exchange: cfg.MessagingChannel}
 
 	healthzUseCase := &usecase.HealthzUseCase{}
@@ -43,6 +44,7 @@ func main() {
 	photoUseCase := usecase.NewPhotoUseCase(&repoPhoto, db, logger)
 	positionUseCase := usecase.NewPositionUseCase(&repoPosition, db, logger)
 	attributesUseCase := usecase.NewAttributesUseCase(&repoAttribute, &repoPosition, db, logger)
+	modalitiesUseCase := usecase.NewModalityUseCase(&repoModality, db, logger)
 
 	go overallUseCase.Start()
 
@@ -55,6 +57,7 @@ func main() {
 		photoUseCase,
 		positionUseCase,
 		attributesUseCase,
+		modalitiesUseCase,
 	)
 
 	r := GinAdapater.SetupRouter()

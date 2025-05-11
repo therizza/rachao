@@ -15,6 +15,7 @@ type GinAdapter struct {
 	PhotoUseCase    *usecase.PhotoUseCase
 	PositionUseCase *usecase.PositionUseCase
 	Attributes      *usecase.AttributesUseCase
+	Modality        *usecase.ModalityUseCase
 }
 
 func NewGinAdapter(
@@ -26,6 +27,7 @@ func NewGinAdapter(
 	photoUseCase *usecase.PhotoUseCase,
 	positionUseCase *usecase.PositionUseCase,
 	attributes *usecase.AttributesUseCase,
+	modality *usecase.ModalityUseCase,
 ) *GinAdapter {
 	return &GinAdapter{
 		HealthzUseCase:  healthzUseCase,
@@ -36,6 +38,7 @@ func NewGinAdapter(
 		PhotoUseCase:    photoUseCase,
 		PositionUseCase: positionUseCase,
 		Attributes:      attributes,
+		Modality:        modality,
 	}
 }
 
@@ -145,6 +148,28 @@ func (ga *GinAdapter) SetupRouter() *gin.Engine {
 	})
 	r.DELETE("/attributes/:id", func(c *gin.Context) {
 		ga.Attributes.Delete(c.Request.Context(), c)
+	})
+
+	r.GET("/modality", func(c *gin.Context) {
+		ga.Modality.GetAll(c.Request.Context(), c)
+	})
+	r.GET("/modality/inactive", func(c *gin.Context) {
+		ga.Modality.GetAllByInactive(c.Request.Context(), c)
+	})
+	r.GET("/modality/:id", func(c *gin.Context) {
+		ga.Modality.GetByID(c.Request.Context(), c)
+	})
+	r.POST("/modality", func(c *gin.Context) {
+		ga.Modality.Create(c.Request.Context(), c)
+	})
+	r.PUT("/modality/:id", func(c *gin.Context) {
+		ga.Modality.Update(c.Request.Context(), c)
+	})
+	r.DELETE("/modality/:id", func(c *gin.Context) {
+		ga.Modality.Inactive(c.Request.Context(), c)
+	})
+	r.POST("/modality/activate/:id", func(c *gin.Context) {
+		ga.Modality.Active(c.Request.Context(), c)
 	})
 
 	return r
